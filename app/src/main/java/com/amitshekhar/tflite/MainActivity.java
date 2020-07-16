@@ -1,9 +1,12 @@
 package com.amitshekhar.tflite;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -22,8 +25,10 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String MODEL_PATH = "mobilenet_quant_v1_224.tflite";
-    private static final boolean QUANT = true;
+//    private static final String MODEL_PATH = "mobilenet_quant_v1_224.tflite";
+//    private static final boolean QUANT = true;
+    private static final String MODEL_PATH = "mobilenet_float_v1_224.tflite";
+    private static final boolean FLOAT = true;
     private static final String LABEL_PATH = "labels.txt";
     private static final int INPUT_SIZE = 224;
 
@@ -31,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Executor executor = Executors.newSingleThreadExecutor();
     private TextView textViewResult;
-    private Button btnDetectObject, btnToggleCamera;
+    private Button btnDetectObject, btnToggleCamera, btnGPU;
     private ImageView imageViewResult;
     private CameraView cameraView;
 
@@ -46,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnToggleCamera = findViewById(R.id.btnToggleCamera);
         btnDetectObject = findViewById(R.id.btnDetectObject);
+        btnGPU = findViewById(R.id.btnGPU);
 
         cameraView.addCameraKitListener(new CameraKitEventListener() {
             @Override
@@ -62,13 +68,21 @@ public class MainActivity extends AppCompatActivity {
             public void onImage(CameraKitImage cameraKitImage) {
 
                 Bitmap bitmap = cameraKitImage.getBitmap();
+                int picturelenght = cameraKitImage.getJpeg().length;
+                byte[] abc = cameraKitImage.getJpeg();
+                Bitmap temperbit =  BitmapFactory.decodeByteArray(cameraKitImage.getJpeg(),0,picturelenght);
 
                 bitmap = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, false);
 
-                imageViewResult.setImageBitmap(bitmap);
+                temperbit = Bitmap.createScaledBitmap(temperbit,INPUT_SIZE,INPUT_SIZE,false);
 
-                final List<Classifier.Recognition> results = classifier.recognizeImage(bitmap);
+                imageViewResult.setImageBitmap(temperbit);
 
+                long startTime = System.currentTimeMillis();
+
+                final List<Classifier.Recognition> results = classifier.recognizeImage(temperbit);
+                long totalTime = System.currentTimeMillis() - startTime;
+                Log.d("Total Time", String.valueOf(totalTime));
                 textViewResult.setText(results.toString());
 
             }
@@ -90,6 +104,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 cameraView.captureImage();
+            }
+        });
+
+        btnGPU.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Intent intent = new Intent(MainActivity.this, notification.class);
+                startActivity(intent);
+
             }
         });
 
@@ -129,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
                             MODEL_PATH,
                             LABEL_PATH,
                             INPUT_SIZE,
-                            QUANT);
+                            FLOAT);
                     makeButtonVisible();
                 } catch (final Exception e) {
                     throw new RuntimeException("Error initializing TensorFlow!", e);

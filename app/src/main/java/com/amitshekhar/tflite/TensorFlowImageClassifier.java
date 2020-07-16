@@ -6,7 +6,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 
 import org.tensorflow.lite.Interpreter;
-
+import org.tensorflow.lite.gpu.GpuDelegate;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -48,9 +48,12 @@ public class TensorFlowImageClassifier implements Classifier {
                              String labelPath,
                              int inputSize,
                              boolean quant) throws IOException {
-
+        GpuDelegate delegate = new GpuDelegate();
+        Interpreter.Options options = (new Interpreter.Options()).addDelegate(delegate);
         TensorFlowImageClassifier classifier = new TensorFlowImageClassifier();
-        classifier.interpreter = new Interpreter(classifier.loadModelFile(assetManager, modelPath), new Interpreter.Options());
+//        classifier.interpreter = new Interpreter(classifier.loadModelFile(assetManager, modelPath), new Interpreter.Options());
+
+        classifier.interpreter = new Interpreter(classifier.loadModelFile(assetManager, modelPath), options);
         classifier.labelList = classifier.loadLabelList(assetManager, labelPath);
         classifier.inputSize = inputSize;
         classifier.quant = quant;
